@@ -1,7 +1,15 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { formatCurrency, formatNumber } from "@/lib/utils"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 
-export function BEPAnalysis({ bep, sellingPrice, dailySales = 0 }) {
+export function BEPAnalysis({ bep, sellingPrice, dailySales, onChange }) {
   if (!bep.isValid) {
     return (
       <Card className="border-destructive">
@@ -12,10 +20,10 @@ export function BEPAnalysis({ bep, sellingPrice, dailySales = 0 }) {
           </CardDescription>
         </CardHeader>
       </Card>
-    )
+    );
   }
 
-  const daysToBEP = dailySales > 0 ? Math.ceil(bep.bepUnit / dailySales) : null
+  const daysToBEP = dailySales > 0 ? Math.ceil(bep.bepUnit / dailySales) : null;
 
   return (
     <Card>
@@ -39,6 +47,19 @@ export function BEPAnalysis({ bep, sellingPrice, dailySales = 0 }) {
               {formatCurrency(bep.bepRupiah)}
             </p>
           </div>
+          <div className="space-y-2 col-span-2">
+            <Label htmlFor="daily-sales">Penjualan Harian (unit)</Label>
+            <Input
+              id="daily-sales"
+              className={"w-full"}
+              placeholder="Contoh: 30"
+              value={dailySales}
+              onChange={(e) => onChange(e.target.value)}
+            />
+            <span className="text-muted-foreground text-sm">
+              Digunakan untuk menghitung waktu tercapainya BEP
+            </span>
+          </div>
         </div>
         {daysToBEP && (
           <div className="mt-4 rounded-lg bg-muted p-4">
@@ -52,6 +73,5 @@ export function BEPAnalysis({ bep, sellingPrice, dailySales = 0 }) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
-

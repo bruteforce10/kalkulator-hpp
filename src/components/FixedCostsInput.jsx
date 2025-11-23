@@ -8,7 +8,7 @@ import {
   CardTitle,
   CardDescription,
 } from "./ui/card";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 export function FixedCostsInput({
@@ -17,18 +17,12 @@ export function FixedCostsInput({
   onAdd,
   onRemove,
   onChange,
-  onAIFill,
-  loadingAI,
-  productName,
 }) {
   // Hitung total biaya tetap per bulan
-  const totalFixedCostPerMonth = fixedCosts.reduce(
-    (sum, item) => {
-      const cost = parseFloat(item.totalCost) || 0;
-      return sum + (isNaN(cost) ? 0 : cost);
-    },
-    0
-  );
+  const totalFixedCostPerMonth = fixedCosts.reduce((sum, item) => {
+    const cost = parseFloat(item.totalCost) || 0;
+    return sum + (isNaN(cost) ? 0 : cost);
+  }, 0);
 
   // Hitung alokasi per produk untuk setiap item
   const calculateAllocationPerUnit = (totalCost) => {
@@ -42,9 +36,10 @@ export function FixedCostsInput({
       parseFloat(item.totalCost) || 0
     );
     // Gunakan nilai yang di-edit user jika ada, atau nilai perhitungan otomatis
-    const allocation = item.allocationPerUnit !== undefined && item.allocationPerUnit !== ""
-      ? parseFloat(item.allocationPerUnit) || 0
-      : suggestedAllocation;
+    const allocation =
+      item.allocationPerUnit !== undefined && item.allocationPerUnit !== ""
+        ? parseFloat(item.allocationPerUnit) || 0
+        : suggestedAllocation;
     return sum + allocation;
   }, 0);
 
@@ -60,18 +55,6 @@ export function FixedCostsInput({
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            {onAIFill && productName && (
-              <Button
-                onClick={onAIFill}
-                disabled={loadingAI || !productName.trim()}
-                size="sm"
-                variant="outline"
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                {loadingAI ? "Memproses..." : "Rekomendasi AI"}
-              </Button>
-            )}
             <Button onClick={onAdd} size="sm">
               <Plus className="mr-2 h-4 w-4" />
               Tambah Biaya
@@ -80,12 +63,6 @@ export function FixedCostsInput({
         </div>
       </CardHeader>
       <CardContent>
-        {loadingAI && (
-          <div className="mb-4 rounded-lg bg-muted p-4 text-center text-sm text-muted-foreground">
-            <Sparkles className="mx-auto h-5 w-5 mb-2 animate-pulse" />
-            AI sedang menganalisis produk dan mengisi biaya tetap...
-          </div>
-        )}
         <div className="space-y-4">
           {/* Target Sales Input */}
           <div className="space-y-2">
@@ -116,16 +93,13 @@ export function FixedCostsInput({
               const suggestedAllocation = calculateAllocationPerUnit(
                 parseFloat(item.totalCost) || 0
               );
-              
-              // Gunakan nilai yang di-edit user jika ada, atau nilai perhitungan otomatis
-              const currentAllocation = item.allocationPerUnit !== undefined && item.allocationPerUnit !== ""
-                ? parseFloat(item.allocationPerUnit) || 0
-                : suggestedAllocation;
-              
+
               // Format untuk display (hilangkan "Rp" dan formatting untuk input)
-              const allocationDisplayValue = item.allocationPerUnit !== undefined && item.allocationPerUnit !== ""
-                ? item.allocationPerUnit
-                : "";
+              const allocationDisplayValue =
+                item.allocationPerUnit !== undefined &&
+                item.allocationPerUnit !== ""
+                  ? item.allocationPerUnit
+                  : "";
 
               return (
                 <div key={index} className="flex gap-2">
@@ -166,7 +140,11 @@ export function FixedCostsInput({
                     <Input
                       id={`fixed-allocation-${index}`}
                       type="number"
-                      placeholder={suggestedAllocation > 0 ? Math.round(suggestedAllocation).toString() : "0"}
+                      placeholder={
+                        suggestedAllocation > 0
+                          ? Math.round(suggestedAllocation).toString()
+                          : "0"
+                      }
                       value={allocationDisplayValue}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -215,4 +193,3 @@ export function FixedCostsInput({
     </Card>
   );
 }
-

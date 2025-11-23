@@ -12,7 +12,10 @@ export function initializeGemini(apiKey) {
  * Generate variable costs (bahan-bahan) berdasarkan nama produk
  * Menggunakan AI untuk menganalisis produk dan memberikan daftar bahan beserta estimasi biaya
  */
-export async function getVariableCostsFromAI(productName, productCategory = "") {
+export async function getVariableCostsFromAI(
+  productName,
+  productCategory = ""
+) {
   if (!genAI) {
     return null;
   }
@@ -26,9 +29,7 @@ export async function getVariableCostsFromAI(productName, productCategory = "") 
     "gemini-1.5-pro-latest", // Gemini 1.5 Pro Latest
   ];
 
-  const categoryInfo = productCategory
-    ? `Kategori: ${productCategory}. `
-    : "";
+  const categoryInfo = productCategory ? `Kategori: ${productCategory}. ` : "";
 
   const prompt = `Sebagai ahli produksi makanan dan minuman di Indonesia, analisis produk "${productName}" dan berikan daftar bahan-bahan (variable costs) yang diperlukan untuk membuat 1 unit produk tersebut.
 
@@ -78,8 +79,21 @@ Sekarang analisis produk "${productName}" dan berikan JSON array bahan-bahannya:
 
       // Extract JSON array jika ada teks lain
       const jsonMatch = jsonText.match(/\[[\s\S]*?\]/);
+      console.log("[getVariableCostsFromAI] jsonMatch:", jsonMatch);
+      console.log(
+        "[getVariableCostsFromAI] jsonText sebelum extract:",
+        jsonText
+      );
       if (jsonMatch) {
         jsonText = jsonMatch[0];
+        console.log(
+          "[getVariableCostsFromAI] jsonText setelah extract:",
+          jsonText
+        );
+      } else {
+        console.warn(
+          "[getVariableCostsFromAI] Tidak ada JSON array yang ditemukan!"
+        );
       }
 
       // Coba parse JSON
@@ -89,12 +103,16 @@ Sekarang analisis produk "${productName}" dan berikan JSON array bahan-bahannya:
       } catch (parseError) {
         // Jika parsing gagal, coba extract manual
         console.warn("JSON parsing gagal, mencoba extract manual:", parseError);
-        throw new Error("Format response tidak valid. AI tidak mengembalikan JSON yang valid.");
+        throw new Error(
+          "Format response tidak valid. AI tidak mengembalikan JSON yang valid."
+        );
       }
-      
+
       // Validasi format
       if (!Array.isArray(variableCosts) || variableCosts.length === 0) {
-        throw new Error("Format response tidak valid. Array kosong atau bukan array.");
+        throw new Error(
+          "Format response tidak valid. Array kosong atau bukan array."
+        );
       }
 
       // Validasi setiap item
@@ -145,9 +163,7 @@ export async function getFixedCostsFromAI(productName, productCategory = "") {
     "gemini-1.5-pro-latest", // Gemini 1.5 Pro Latest
   ];
 
-  const categoryInfo = productCategory
-    ? `Kategori: ${productCategory}. `
-    : "";
+  const categoryInfo = productCategory ? `Kategori: ${productCategory}. ` : "";
 
   const prompt = `Sebagai ahli bisnis makanan dan minuman di Indonesia, analisis produk "${productName}" dan berikan daftar biaya tetap (fixed costs) yang biasanya diperlukan untuk menjalankan bisnis produk tersebut per bulan.
 
@@ -196,8 +212,18 @@ Sekarang analisis produk "${productName}" dan berikan JSON array biaya tetapnya:
 
       // Extract JSON array jika ada teks lain
       const jsonMatch = jsonText.match(/\[[\s\S]*?\]/);
+      console.log("[getFixedCostsFromAI] jsonMatch:", jsonMatch);
+      console.log("[getFixedCostsFromAI] jsonText sebelum extract:", jsonText);
       if (jsonMatch) {
         jsonText = jsonMatch[0];
+        console.log(
+          "[getFixedCostsFromAI] jsonText setelah extract:",
+          jsonText
+        );
+      } else {
+        console.warn(
+          "[getFixedCostsFromAI] Tidak ada JSON array yang ditemukan!"
+        );
       }
 
       // Coba parse JSON
@@ -206,12 +232,16 @@ Sekarang analisis produk "${productName}" dan berikan JSON array biaya tetapnya:
         fixedCosts = JSON.parse(jsonText);
       } catch (parseError) {
         console.warn("JSON parsing gagal, mencoba extract manual:", parseError);
-        throw new Error("Format response tidak valid. AI tidak mengembalikan JSON yang valid.");
+        throw new Error(
+          "Format response tidak valid. AI tidak mengembalikan JSON yang valid."
+        );
       }
 
       // Validasi format
       if (!Array.isArray(fixedCosts) || fixedCosts.length === 0) {
-        throw new Error("Format response tidak valid. Array kosong atau bukan array.");
+        throw new Error(
+          "Format response tidak valid. Array kosong atau bukan array."
+        );
       }
 
       // Validasi setiap item
@@ -219,7 +249,9 @@ Sekarang analisis produk "${productName}" dan berikan JSON array biaya tetapnya:
         .filter((item) => item && typeof item === "object")
         .map((item) => ({
           name: String(item.name || "").trim(),
-          totalCost: item.totalCost ? String(Math.abs(parseFloat(item.totalCost) || 0)) : "",
+          totalCost: item.totalCost
+            ? String(Math.abs(parseFloat(item.totalCost) || 0))
+            : "",
         }))
         .filter((item) => item.name && item.totalCost); // Hanya ambil yang valid
 
@@ -262,9 +294,7 @@ export async function getAllCostsFromAI(productName, productCategory = "") {
     "gemini-1.5-pro-latest", // Gemini 1.5 Pro Latest
   ];
 
-  const categoryInfo = productCategory
-    ? `Kategori: ${productCategory}. `
-    : "";
+  const categoryInfo = productCategory ? `Kategori: ${productCategory}. ` : "";
 
   const prompt = `Sebagai ahli bisnis makanan dan minuman di Indonesia, analisis produk "${productName}" secara menyeluruh dan berikan:
 
@@ -331,17 +361,27 @@ PENTING: JANGAN tambahkan teks lain, HANYA output JSON object saja. Sekarang ana
 
       // Extract JSON object jika ada teks lain
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      console.log("[getAllCostsFromAI] jsonMatch:", jsonMatch);
+      console.log("[getAllCostsFromAI] jsonText sebelum extract:", jsonText);
       if (jsonMatch) {
         jsonText = jsonMatch[0];
+        console.log("[getAllCostsFromAI] jsonText setelah extract:", jsonText);
+      } else {
+        console.warn(
+          "[getAllCostsFromAI] Tidak ada JSON object yang ditemukan!"
+        );
       }
 
       // Coba parse JSON
       let allCosts;
       try {
         allCosts = JSON.parse(jsonText);
+        console.log("[getAllCostsFromAI] allCosts:", allCosts);
       } catch (parseError) {
         console.warn("JSON parsing gagal:", parseError);
-        throw new Error("Format response tidak valid. AI tidak mengembalikan JSON yang valid.");
+        throw new Error(
+          "Format response tidak valid. AI tidak mengembalikan JSON yang valid."
+        );
       }
 
       // Validasi dan parse variable costs
@@ -350,7 +390,9 @@ PENTING: JANGAN tambahkan teks lain, HANYA output JSON object saja. Sekarang ana
             .filter((item) => item && typeof item === "object")
             .map((item) => ({
               name: String(item.name || "").trim(),
-              cost: item.cost ? String(Math.abs(parseFloat(item.cost) || 0)) : "",
+              cost: item.cost
+                ? String(Math.abs(parseFloat(item.cost) || 0))
+                : "",
             }))
             .filter((item) => item.name && item.cost)
         : [];
@@ -424,7 +466,9 @@ ${categoryInfo}
 Data Produk:
 - HPP (Harga Pokok Produksi): Rp ${hpp.toLocaleString("id-ID")}
 - Biaya Variabel per Unit: Rp ${variableCostPerUnit.toLocaleString("id-ID")}
-- Total Biaya Tetap per Bulan: Rp ${totalFixedCostPerMonth.toLocaleString("id-ID")}
+- Total Biaya Tetap per Bulan: Rp ${totalFixedCostPerMonth.toLocaleString(
+    "id-ID"
+  )}
 - Target Penjualan per Bulan: ${targetSales.toLocaleString("id-ID")} unit
 
 Berikan rekomendasi harga jual dengan 3 level strategi:
@@ -476,8 +520,21 @@ Sekarang analisis produk "${productName}" dan berikan JSON object rekomendasi ha
 
       // Extract JSON object jika ada teks lain
       const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      console.log("[getAIPriceRecommendations] jsonMatch:", jsonMatch);
+      console.log(
+        "[getAIPriceRecommendations] jsonText sebelum extract:",
+        jsonText
+      );
       if (jsonMatch) {
         jsonText = jsonMatch[0];
+        console.log(
+          "[getAIPriceRecommendations] jsonText setelah extract:",
+          jsonText
+        );
+      } else {
+        console.warn(
+          "[getAIPriceRecommendations] Tidak ada JSON object yang ditemukan!"
+        );
       }
 
       // Coba parse JSON
@@ -486,7 +543,9 @@ Sekarang analisis produk "${productName}" dan berikan JSON object rekomendasi ha
         priceRec = JSON.parse(jsonText);
       } catch (parseError) {
         console.warn("JSON parsing gagal:", parseError);
-        throw new Error("Format response tidak valid. AI tidak mengembalikan JSON yang valid.");
+        throw new Error(
+          "Format response tidak valid. AI tidak mengembalikan JSON yang valid."
+        );
       }
 
       // Validasi dan format response
@@ -514,7 +573,9 @@ Sekarang analisis produk "${productName}" dan berikan JSON object rekomendasi ha
         recommendations.standard.price === 0 &&
         recommendations.premium.price === 0
       ) {
-        throw new Error("Tidak ada rekomendasi harga valid yang ditemukan dari AI.");
+        throw new Error(
+          "Tidak ada rekomendasi harga valid yang ditemukan dari AI."
+        );
       }
 
       return recommendations;

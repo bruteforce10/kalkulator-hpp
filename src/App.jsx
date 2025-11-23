@@ -267,32 +267,7 @@ function App() {
                   handleFixedCostChange(indexOrKey, newValue);
                 }
               }}
-              onAIFill={handleGetAllAICosts}
-              loadingAI={loadingAI}
-              productName={productName}
             />
-
-            {/* Daily Sales - Optional */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Penjualan Harian (Opsional)</CardTitle>
-                <CardDescription>
-                  Digunakan untuk menghitung waktu tercapainya BEP
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="daily-sales">Penjualan Harian (unit)</Label>
-                  <Input
-                    id="daily-sales"
-                    type="number"
-                    placeholder="Contoh: 30"
-                    value={dailySales}
-                    onChange={(e) => setDailySales(e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Results Section */}
@@ -330,6 +305,7 @@ function App() {
               bep={bep}
               sellingPrice={selectedPrice}
               dailySales={parseFloat(dailySales) || 0}
+              onChange={setDailySales}
             />
             <ProfitAnalysis
               hpp={hppData.hpp}
