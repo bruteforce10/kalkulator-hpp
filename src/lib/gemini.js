@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { formatInputNumber } from "./utils";
 
 let genAI = null;
 
@@ -120,7 +121,9 @@ Sekarang analisis produk "${productName}" dan berikan JSON array bahan-bahannya:
         .filter((item) => item && typeof item === "object")
         .map((item) => ({
           name: String(item.name || "").trim(),
-          cost: item.cost ? String(Math.abs(parseFloat(item.cost) || 0)) : "",
+          cost: item.cost
+            ? formatInputNumber(Math.abs(parseFloat(item.cost) || 0))
+            : "",
         }))
         .filter((item) => item.name && item.cost); // Hanya ambil yang valid
 
@@ -250,7 +253,7 @@ Sekarang analisis produk "${productName}" dan berikan JSON array biaya tetapnya:
         .map((item) => ({
           name: String(item.name || "").trim(),
           totalCost: item.totalCost
-            ? String(Math.abs(parseFloat(item.totalCost) || 0))
+            ? formatInputNumber(Math.abs(parseFloat(item.totalCost) || 0))
             : "",
         }))
         .filter((item) => item.name && item.totalCost); // Hanya ambil yang valid
@@ -391,7 +394,7 @@ PENTING: JANGAN tambahkan teks lain, HANYA output JSON object saja. Sekarang ana
             .map((item) => ({
               name: String(item.name || "").trim(),
               cost: item.cost
-                ? String(Math.abs(parseFloat(item.cost) || 0))
+                ? formatInputNumber(Math.abs(parseFloat(item.cost) || 0))
                 : "",
             }))
             .filter((item) => item.name && item.cost)
@@ -404,7 +407,7 @@ PENTING: JANGAN tambahkan teks lain, HANYA output JSON object saja. Sekarang ana
             .map((item) => ({
               name: String(item.name || "").trim(),
               totalCost: item.totalCost
-                ? String(Math.abs(parseFloat(item.totalCost) || 0))
+                ? formatInputNumber(Math.abs(parseFloat(item.totalCost) || 0))
                 : "",
             }))
             .filter((item) => item.name && item.totalCost)
@@ -454,8 +457,6 @@ export async function getAIPriceRecommendations(
     "gemini-2.0-flash-exp",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-pro-latest",
   ];
 
   const categoryInfo = productCategory ? `Kategori: ${productCategory}. ` : "";

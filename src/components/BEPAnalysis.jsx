@@ -5,11 +5,18 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency, formatNumber, parseFormattedNumber, formatInputNumber } from "@/lib/utils";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 
 export function BEPAnalysis({ bep, sellingPrice, dailySales, onChange }) {
+  // Handler untuk format input
+  const handleNumberInput = (value) => {
+    const cleaned = value.replace(/[^\d]/g, '');
+    return cleaned ? formatInputNumber(cleaned) : '';
+  };
+
+  const dailySalesValue = parseFormattedNumber(dailySales);
   if (!bep.isValid) {
     return (
       <Card className="border-destructive">
@@ -23,7 +30,7 @@ export function BEPAnalysis({ bep, sellingPrice, dailySales, onChange }) {
     );
   }
 
-  const daysToBEP = dailySales > 0 ? Math.ceil(bep.bepUnit / dailySales) : null;
+  const daysToBEP = dailySalesValue > 0 ? Math.ceil(bep.bepUnit / dailySalesValue) : null;
 
   return (
     <Card>
@@ -51,10 +58,12 @@ export function BEPAnalysis({ bep, sellingPrice, dailySales, onChange }) {
             <Label htmlFor="daily-sales">Penjualan Harian (unit)</Label>
             <Input
               id="daily-sales"
+              type="text"
+              inputMode="numeric"
               className={"w-full"}
               placeholder="Contoh: 30"
               value={dailySales}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(e) => onChange(handleNumberInput(e.target.value))}
             />
             <span className="text-muted-foreground text-sm">
               Digunakan untuk menghitung waktu tercapainya BEP
@@ -64,7 +73,7 @@ export function BEPAnalysis({ bep, sellingPrice, dailySales, onChange }) {
         {daysToBEP && (
           <div className="mt-4 rounded-lg bg-muted p-4">
             <p className="text-sm text-muted-foreground">
-              Dengan penjualan {formatNumber(dailySales)} unit/hari
+              Dengan penjualan {formatNumber(dailySalesValue)} unit/hari
             </p>
             <p className="text-lg font-semibold">
               BEP akan tercapai dalam {formatNumber(daysToBEP)} hari

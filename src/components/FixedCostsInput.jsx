@@ -9,7 +9,7 @@ import {
   CardDescription,
 } from "./ui/card";
 import { Plus, Trash2 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, parseFormattedNumber, formatInputNumber } from "@/lib/utils";
 
 export function FixedCostsInput({
   fixedCosts,
@@ -20,28 +20,34 @@ export function FixedCostsInput({
 }) {
   // Hitung total biaya tetap per bulan
   const totalFixedCostPerMonth = fixedCosts.reduce((sum, item) => {
-    const cost = parseFloat(item.totalCost) || 0;
+    const cost = parseFormattedNumber(item.totalCost);
     return sum + (isNaN(cost) ? 0 : cost);
   }, 0);
 
   // Hitung alokasi per produk untuk setiap item
   const calculateAllocationPerUnit = (totalCost) => {
-    const sales = parseFloat(targetSales) || 0;
+    const sales = parseFormattedNumber(targetSales);
     return sales > 0 ? totalCost / sales : 0;
   };
 
   // Total alokasi per produk (gunakan nilai yang di-edit atau perhitungan otomatis)
   const totalAllocationPerUnit = fixedCosts.reduce((sum, item) => {
     const suggestedAllocation = calculateAllocationPerUnit(
-      parseFloat(item.totalCost) || 0
+      parseFormattedNumber(item.totalCost)
     );
     // Gunakan nilai yang di-edit user jika ada, atau nilai perhitungan otomatis
     const allocation =
       item.allocationPerUnit !== undefined && item.allocationPerUnit !== ""
-        ? parseFloat(item.allocationPerUnit) || 0
+        ? parseFormattedNumber(item.allocationPerUnit)
         : suggestedAllocation;
     return sum + allocation;
   }, 0);
+
+  // Handler untuk format input
+  const handleNumberInput = (value) => {
+    const cleaned = value.replace(/[^\d]/g, '');
+    return cleaned ? formatInputNumber(cleaned) : '';
+  };
 
   return (
     <Card>
@@ -71,13 +77,14 @@ export function FixedCostsInput({
             </Label>
             <Input
               id="target-sales"
-              type="number"
-              placeholder="Contoh: 1000"
+              type="text"
+              inputMode="numeric"
+              placeholder="Contoh: 1.000"
               value={targetSales}
               onChange={(e) => {
                 // Trigger onChange untuk targetSales
                 if (onChange && typeof onChange === "function") {
-                  onChange("targetSales", e.target.value);
+                  onChange("targetSales", handleNumberInput(e.target.value));
                 }
               }}
             />
@@ -91,7 +98,7 @@ export function FixedCostsInput({
             {fixedCosts.map((item, index) => {
               // Hitung saran alokasi otomatis
               const suggestedAllocation = calculateAllocationPerUnit(
-                parseFloat(item.totalCost) || 0
+                parseFormattedNumber(item.totalCost)
               );
 
               // Format untuk display (hilangkan "Rp" dan formatting untuk input)
@@ -120,13 +127,14 @@ export function FixedCostsInput({
                     </Label>
                     <Input
                       id={`fixed-cost-${index}`}
-                      type="number"
-                      placeholder="Contoh: 2000000"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Contoh: 2.000.000"
                       value={item.totalCost}
                       onChange={(e) =>
                         onChange(index, {
                           ...item,
-                          totalCost: e.target.value,
+                          totalCost: handleNumberInput(e.target.value),
                           // Reset allocationPerUnit saat totalCost berubah agar kembali ke saran otomatis
                           allocationPerUnit: "",
                         })
@@ -139,15 +147,16 @@ export function FixedCostsInput({
                     </Label>
                     <Input
                       id={`fixed-allocation-${index}`}
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       placeholder={
                         suggestedAllocation > 0
-                          ? Math.round(suggestedAllocation).toString()
+                          ? formatInputNumber(Math.round(suggestedAllocation))
                           : "0"
                       }
                       value={allocationDisplayValue}
                       onChange={(e) => {
-                        const value = e.target.value;
+                        const value = handleNumberInput(e.target.value);
                         onChange(index, {
                           ...item,
                           allocationPerUnit: value,

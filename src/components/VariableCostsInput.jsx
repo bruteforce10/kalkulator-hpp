@@ -3,16 +3,22 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card"
 import { Plus, Trash2, Sparkles } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, parseFormattedNumber, formatInputNumber } from "@/lib/utils"
 
 export function VariableCostsInput({ variableCosts, onAdd, onRemove, onChange, onAIFill, loadingAI, productName }) {
   const totalVariableCost = variableCosts.reduce(
     (sum, item) => {
-      const cost = parseFloat(item.cost) || 0
+      const cost = parseFormattedNumber(item.cost)
       return sum + (isNaN(cost) ? 0 : cost)
     },
     0
   )
+
+  // Handler untuk format input
+  const handleNumberInput = (value) => {
+    const cleaned = value.replace(/[^\d]/g, '')
+    return cleaned ? formatInputNumber(cleaned) : ''
+  }
 
   return (
     <Card>
@@ -69,11 +75,12 @@ export function VariableCostsInput({ variableCosts, onAdd, onRemove, onChange, o
                 <Label htmlFor={`var-cost-${index}`}>Biaya per Unit</Label>
                 <Input
                   id={`var-cost-${index}`}
-                  type="number"
-                  placeholder="Contoh: 2250"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Contoh: 2.250"
                   value={item.cost}
                   onChange={(e) =>
-                    onChange(index, { ...item, cost: e.target.value })
+                    onChange(index, { ...item, cost: handleNumberInput(e.target.value) })
                   }
                 />
               </div>

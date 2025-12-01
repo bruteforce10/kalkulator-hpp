@@ -28,6 +28,7 @@ import {
   getAIPriceRecommendations,
 } from "./lib/gemini";
 import { FixedCostsInput } from "./components/FixedCostsInput";
+import { parseFormattedNumber } from "./lib/utils";
 
 function App() {
   const [productName, setProductName] = useState("");
@@ -55,7 +56,7 @@ function App() {
   const hppData = calculateHPP(
     variableCosts,
     fixedCosts,
-    parseFloat(targetSales) || 0
+    parseFormattedNumber(targetSales)
   );
 
   // Calculate price recommendations
@@ -175,7 +176,7 @@ function App() {
         hppData.hpp,
         hppData.variableCostPerUnit,
         hppData.totalFixedCostPerMonth || 0,
-        parseFloat(targetSales) || 0
+        parseFormattedNumber(targetSales)
       );
 
       if (aiPriceRec) {
@@ -234,8 +235,7 @@ function App() {
                     onChange={(e) => setProductCategory(e.target.value)}
                   >
                     <option value="">Pilih Kategori</option>
-                    <option value="food">Makanan</option>
-                    <option value="beverage">Minuman</option>
+                    <option value="food & baverage">Makanan & Minuman</option>
                     <option value="retail">Retail</option>
                     <option value="other">Lainnya</option>
                   </Select>
@@ -300,17 +300,19 @@ function App() {
 
         {/* Analysis Section */}
         {selectedPrice > 0 && (
-          <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="mt-6 space-y-6">
+            <ProfitAnalysis
+              sellingPrice={selectedPrice}
+              variableCostPerUnit={hppData.variableCostPerUnit || 0}
+              totalFixedCostPerMonth={hppData.totalFixedCostPerMonth || 0}
+              fixedCostPerUnit={hppData.fixedCostPerUnit || 0}
+              targetSalesPerMonth={parseFormattedNumber(targetSales)}
+            />
             <BEPAnalysis
               bep={bep}
               sellingPrice={selectedPrice}
-              dailySales={parseFloat(dailySales) || 0}
+              dailySales={dailySales}
               onChange={setDailySales}
-            />
-            <ProfitAnalysis
-              hpp={hppData.hpp}
-              sellingPrice={selectedPrice}
-              totalFixedCost={hppData.totalFixedCostPerMonth || 0}
             />
           </div>
         )}

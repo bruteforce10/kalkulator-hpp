@@ -1,28 +1,30 @@
+import { parseFormattedNumber } from "./utils"
+
 /**
  * Calculate HPP and related metrics
  */
 
 export function calculateHPP(variableCosts, fixedCosts, targetSales) {
   const variableCostPerUnit = variableCosts.reduce((sum, item) => {
-    return sum + (parseFloat(item.cost) || 0)
+    return sum + parseFormattedNumber(item.cost)
   }, 0)
 
   // Hitung total biaya tetap per bulan dari array fixed costs
   const totalFixedCostPerMonth = Array.isArray(fixedCosts)
     ? fixedCosts.reduce((sum, item) => {
-        return sum + (parseFloat(item.totalCost) || 0)
+        return sum + parseFormattedNumber(item.totalCost)
       }, 0)
-    : parseFloat(fixedCosts) || 0
+    : parseFormattedNumber(fixedCosts)
 
   // Hitung alokasi biaya tetap per unit
   // Gunakan nilai yang di-edit user jika ada, atau perhitungan otomatis
   let fixedCostPerUnit = 0;
   if (Array.isArray(fixedCosts)) {
     fixedCostPerUnit = fixedCosts.reduce((sum, item) => {
-      const totalCost = parseFloat(item.totalCost) || 0;
+      const totalCost = parseFormattedNumber(item.totalCost);
       // Jika user sudah mengedit allocationPerUnit, gunakan nilai tersebut
       if (item.allocationPerUnit !== undefined && item.allocationPerUnit !== "") {
-        return sum + (parseFloat(item.allocationPerUnit) || 0);
+        return sum + parseFormattedNumber(item.allocationPerUnit);
       }
       // Jika belum di-edit, hitung otomatis
       const suggestedAllocation = targetSales > 0 ? totalCost / targetSales : 0;
@@ -89,9 +91,9 @@ export function calculateBEP(fixedCosts, sellingPrice, variableCostPerUnit) {
   // Hitung total biaya tetap per bulan
   const totalFixedCost = Array.isArray(fixedCosts)
     ? fixedCosts.reduce((sum, item) => {
-        return sum + (parseFloat(item.totalCost) || 0)
+        return sum + parseFormattedNumber(item.totalCost)
       }, 0)
-    : parseFloat(fixedCosts) || 0
+    : parseFormattedNumber(fixedCosts)
 
   const bepUnit = Math.ceil(totalFixedCost / contributionMargin)
   const bepRupiah = bepUnit * sellingPrice
@@ -117,9 +119,9 @@ export function generateSimulationTable(hpp, sellingPrice, variableCostPerUnit, 
   // Hitung total biaya tetap per bulan
   const totalFixedCost = Array.isArray(fixedCosts)
     ? fixedCosts.reduce((sum, item) => {
-        return sum + (parseFloat(item.totalCost) || 0)
+        return sum + parseFormattedNumber(item.totalCost)
       }, 0)
-    : parseFloat(fixedCosts) || 0
+    : parseFormattedNumber(fixedCosts)
 
   for (let units = 0; units <= maxUnits; units += step) {
     const revenue = units * sellingPrice
