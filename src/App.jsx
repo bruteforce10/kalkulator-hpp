@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -29,6 +29,7 @@ import {
 } from "./lib/gemini";
 import { FixedCostsInput } from "./components/FixedCostsInput";
 import { parseFormattedNumber } from "./lib/utils";
+import { ImagePlus, X } from "lucide-react";
 
 function App() {
   const [productName, setProductName] = useState("");
@@ -43,6 +44,13 @@ function App() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [loadingAIPrice, setLoadingAIPrice] = useState(false);
   const [aiPriceRecommendations, setAiPriceRecommendations] = useState(null);
+  const [productImage, setProductImage] = useState({
+    base64: "",
+    preview: "",
+    mimeType: "",
+    name: "",
+  });
+  const imageInputRef = useRef(null);
 
   // Initialize Gemini on mount
   useEffect(() => {
@@ -71,6 +79,35 @@ function App() {
 
   const handleAddVariableCost = () => {
     setVariableCosts([...variableCosts, { name: "", cost: "" }]);
+  };
+  const handleProductImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      setProductImage({ base64: "", preview: "", mimeType: "", name: "" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        const [, base64Data] = result.split(",");
+        setProductImage({
+          base64: base64Data || "",
+          preview: result,
+          mimeType: file.type || "image/png",
+          name: file.name,
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveProductImage = () => {
+    setProductImage({ base64: "", preview: "", mimeType: "", name: "" });
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
   };
 
   const handleRemoveVariableCost = (index) => {
@@ -101,7 +138,18 @@ function App() {
 
     setLoadingAI(true);
     try {
-      const allCosts = await getAllCostsFromAI(productName, productCategory);
+      const imagePayload =
+        productImage.base64 && productImage.mimeType
+          ? {
+              data: productImage.base64,
+              mimeType: productImage.mimeType || "image/png",
+            }
+          : null;
+      const allCosts = await getAllCostsFromAI(
+        productName,
+        productCategory,
+        imagePayload
+      );
 
       let hasData = false;
 
@@ -170,13 +218,21 @@ function App() {
 
     setLoadingAIPrice(true);
     try {
+      const imagePayload =
+        productImage.base64 && productImage.mimeType
+          ? {
+              data: productImage.base64,
+              mimeType: productImage.mimeType || "image/png",
+            }
+          : null;
       const aiPriceRec = await getAIPriceRecommendations(
         productName,
         productCategory,
         hppData.hpp,
         hppData.variableCostPerUnit,
         hppData.totalFixedCostPerMonth || 0,
-        parseFormattedNumber(targetSales)
+        parseFormattedNumber(targetSales) || 0,
+        imagePayload
       );
 
       if (aiPriceRec) {
@@ -239,6 +295,66 @@ function App() {
                     <option value="retail">Retail</option>
                     <option value="other">Lainnya</option>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="product-image">
+                    Gambar Produk (Opsional)
+                  </Label>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-xl border border-dashed border-muted-foreground/40 bg-muted">
+                      {productImage.preview ? (
+                        <img
+                          src={productImage.preview}
+                          alt="Preview produk"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center text-xs text-muted-foreground">
+                          <ImagePlus className="mb-1 h-6 w-6" />
+                          <span>Belum ada</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        id="product-image"
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleProductImageChange}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => imageInputRef.current?.click()}
+                        >
+                          Pilih Gambar
+                        </Button>
+                        {productImage.preview && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={handleRemoveProductImage}
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Hapus
+                          </Button>
+                        )}
+                      </div>
+                      {productImage.name && (
+                        <p className="text-xs text-muted-foreground">
+                          {productImage.name}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        Gambar akan membantu AI memberikan saran komponen biaya
+                        yang lebih akurat.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

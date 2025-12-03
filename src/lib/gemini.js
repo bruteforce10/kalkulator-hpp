@@ -9,6 +9,27 @@ export function initializeGemini(apiKey) {
   }
 }
 
+function buildContentInput(prompt, imagePayload) {
+  if (imagePayload?.data) {
+    return [
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              data: imagePayload.data,
+              mimeType: imagePayload.mimeType || "image/png",
+            },
+          },
+        ],
+      },
+    ];
+  }
+
+  return prompt;
+}
+
 /**
  * Generate variable costs (bahan-bahan) berdasarkan nama produk
  * Menggunakan AI untuk menganalisis produk dan memberikan daftar bahan beserta estimasi biaya
@@ -283,7 +304,11 @@ Sekarang analisis produk "${productName}" dan berikan JSON array biaya tetapnya:
  * Generate variable costs DAN fixed costs sekaligus berdasarkan nama produk
  * Menggunakan AI untuk menganalisis produk dan memberikan daftar bahan serta biaya tetap
  */
-export async function getAllCostsFromAI(productName, productCategory = "") {
+export async function getAllCostsFromAI(
+  productName,
+  productCategory = "",
+  productImage
+) {
   if (!genAI) {
     return null;
   }
@@ -299,12 +324,16 @@ export async function getAllCostsFromAI(productName, productCategory = "") {
 
   const categoryInfo = productCategory ? `Kategori: ${productCategory}. ` : "";
 
+  const imageInstruction = productImage
+    ? "\nGambar produk terlampir. Gunakan detail visual tersebut untuk memahami bahan atau gaya penyajian produk."
+    : "";
+
   const prompt = `Sebagai ahli bisnis makanan dan minuman di Indonesia, analisis produk "${productName}" secara menyeluruh dan berikan:
 
 1. DAFTAR BAHAN-BAHAN (variable costs) yang diperlukan untuk membuat 1 unit produk tersebut
 2. DAFTAR BIAYA TETAP (fixed costs) yang biasanya diperlukan untuk menjalankan bisnis produk tersebut per bulan
 
-${categoryInfo}
+${categoryInfo}${imageInstruction}
 
 Format jawaban HARUS dalam JSON object seperti ini:
 {
@@ -353,7 +382,9 @@ PENTING: JANGAN tambahkan teks lain, HANYA output JSON object saja. Sekarang ana
     try {
       console.log(`Mencoba model: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent(
+        buildContentInput(prompt, productImage)
+      );
       const response = await result.response;
       const text = response.text();
 
@@ -446,7 +477,8 @@ export async function getAIPriceRecommendations(
   hpp,
   variableCostPerUnit,
   totalFixedCostPerMonth,
-  targetSales
+  targetSales,
+  productImage
 ) {
   if (!genAI) {
     return null;
@@ -461,9 +493,13 @@ export async function getAIPriceRecommendations(
 
   const categoryInfo = productCategory ? `Kategori: ${productCategory}. ` : "";
 
+  const imageInstruction = productImage
+    ? "\nGambar produk terlampir. Gunakan detail visual tersebut untuk menilai positioning harga."
+    : "";
+
   const prompt = `Sebagai konsultan bisnis makanan dan minuman di Indonesia, analisis produk "${productName}" dan berikan rekomendasi harga jual yang strategis.
 
-${categoryInfo}
+${categoryInfo}${imageInstruction}
 Data Produk:
 - HPP (Harga Pokok Produksi): Rp ${hpp.toLocaleString("id-ID")}
 - Biaya Variabel per Unit: Rp ${variableCostPerUnit.toLocaleString("id-ID")}
@@ -510,7 +546,9 @@ Sekarang analisis produk "${productName}" dan berikan JSON object rekomendasi ha
     try {
       console.log(`Mencoba model: ${modelName}`);
       const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt);
+      const result = await model.generateContent(
+        buildContentInput(prompt, productImage)
+      );
       const response = await result.response;
       const text = response.text();
 
