@@ -34,7 +34,16 @@ import { ImagePlus, X } from "lucide-react";
 function App() {
   const [productName, setProductName] = useState("");
   const [productCategory, setProductCategory] = useState("");
-  const [variableCosts, setVariableCosts] = useState([{ name: "", cost: "" }]);
+  const [variableCosts, setVariableCosts] = useState([
+    {
+      name: "",
+      usageAmount: "",
+      usageUnit: "",
+      purchasePrice: "",
+      purchaseQuantity: "",
+      purchaseUnit: "",
+    },
+  ]);
   const [fixedCosts, setFixedCosts] = useState([
     { name: "", totalCost: "", allocationPerUnit: "" },
   ]);
@@ -78,7 +87,17 @@ function App() {
       : { bepUnit: 0, bepRupiah: 0, isValid: false };
 
   const handleAddVariableCost = () => {
-    setVariableCosts([...variableCosts, { name: "", cost: "" }]);
+    setVariableCosts([
+      ...variableCosts,
+      {
+        name: "",
+        usageAmount: "",
+        usageUnit: "",
+        purchasePrice: "",
+        purchaseQuantity: "",
+        purchaseUnit: "",
+      },
+    ]);
   };
   const handleProductImageChange = (event) => {
     const file = event.target.files?.[0];

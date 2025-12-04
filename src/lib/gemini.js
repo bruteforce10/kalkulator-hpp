@@ -338,8 +338,22 @@ ${categoryInfo}${imageInstruction}
 Format jawaban HARUS dalam JSON object seperti ini:
 {
   "variableCosts": [
-    {"name": "Nama Bahan 1", "cost": 2500},
-    {"name": "Nama Bahan 2", "cost": 1500}
+    {
+      "name": "Nama Bahan 1",
+      "usageAmount": 20,
+      "usageUnit": "g",
+      "purchasePrice": 50000,
+      "purchaseQuantity": 500,
+      "purchaseUnit": "g"
+    },
+    {
+      "name": "Nama Bahan 2",
+      "usageAmount": 250,
+      "usageUnit": "ml",
+      "purchasePrice": 15000,
+      "purchaseQuantity": 1000,
+      "purchaseUnit": "ml"
+    }
   ],
   "fixedCosts": [
     {"name": "Nama Biaya Tetap 1", "totalCost": 2000000},
@@ -349,8 +363,13 @@ Format jawaban HARUS dalam JSON object seperti ini:
 
 Aturan untuk Variable Costs:
 - Berikan 3-8 bahan utama yang biasanya digunakan
-- Estimasi biaya per unit produk (dalam Rupiah Indonesia)
-- Biaya dalam angka saja (tanpa "Rp" atau koma)
+- usageAmount: Jumlah bahan yang digunakan per 1 produk (angka saja)
+- usageUnit: Satuan pemakaian (pilih salah satu: g, kg, ml, L, pcs, buah, lembar)
+- purchasePrice: Total harga pembelian bahan (dalam Rupiah Indonesia, angka saja)
+- purchaseQuantity: Jumlah yang dibeli (angka saja)
+- purchaseUnit: Satuan pembelian (pilih salah satu: g, kg, ml, L, pcs, buah, lembar)
+- Pastikan usageUnit dan purchaseUnit kompatibel (sama kategori: berat, volume, atau jumlah)
+- Gunakan satuan yang realistis untuk pasar Indonesia
 
 Aturan untuk Fixed Costs:
 - Berikan 3-8 biaya tetap utama (seperti: sewa tempat, gaji karyawan, listrik, internet, dll)
@@ -360,11 +379,46 @@ Aturan untuk Fixed Costs:
 Contoh untuk "Kopi Susu Gula Aren":
 {
   "variableCosts": [
-    {"name": "Kopi bubuk", "cost": 2250},
-    {"name": "Susu cair", "cost": 2400},
-    {"name": "Gula aren", "cost": 750},
-    {"name": "Cup + tutup", "cost": 700},
-    {"name": "Sedotan", "cost": 75}
+    {
+      "name": "Kopi bubuk",
+      "usageAmount": 20,
+      "usageUnit": "g",
+      "purchasePrice": 50000,
+      "purchaseQuantity": 500,
+      "purchaseUnit": "g"
+    },
+    {
+      "name": "Susu cair",
+      "usageAmount": 250,
+      "usageUnit": "ml",
+      "purchasePrice": 12000,
+      "purchaseQuantity": 1000,
+      "purchaseUnit": "ml"
+    },
+    {
+      "name": "Gula aren",
+      "usageAmount": 15,
+      "usageUnit": "g",
+      "purchasePrice": 25000,
+      "purchaseQuantity": 1000,
+      "purchaseUnit": "g"
+    },
+    {
+      "name": "Cup + tutup",
+      "usageAmount": 1,
+      "usageUnit": "pcs",
+      "purchasePrice": 70000,
+      "purchaseQuantity": 100,
+      "purchaseUnit": "pcs"
+    },
+    {
+      "name": "Sedotan",
+      "usageAmount": 1,
+      "usageUnit": "pcs",
+      "purchasePrice": 10000,
+      "purchaseQuantity": 200,
+      "purchaseUnit": "pcs"
+    }
   ],
   "fixedCosts": [
     {"name": "Sewa tempat", "totalCost": 3000000},
@@ -422,13 +476,56 @@ PENTING: JANGAN tambahkan teks lain, HANYA output JSON object saja. Sekarang ana
       const variableCosts = Array.isArray(allCosts.variableCosts)
         ? allCosts.variableCosts
             .filter((item) => item && typeof item === "object")
-            .map((item) => ({
-              name: String(item.name || "").trim(),
-              cost: item.cost
-                ? formatInputNumber(Math.abs(parseFloat(item.cost) || 0))
-                : "",
-            }))
-            .filter((item) => item.name && item.cost)
+            .map((item) => {
+              // New structure with usage and purchase info
+              if (
+                item.usageAmount !== undefined ||
+                item.purchasePrice !== undefined
+              ) {
+                return {
+                  name: String(item.name || "").trim(),
+                  usageAmount: item.usageAmount
+                    ? formatInputNumber(
+                        Math.abs(parseFloat(item.usageAmount) || 0)
+                      )
+                    : "",
+                  usageUnit: String(item.usageUnit || "").trim(),
+                  purchasePrice: item.purchasePrice
+                    ? formatInputNumber(
+                        Math.abs(parseFloat(item.purchasePrice) || 0)
+                      )
+                    : "",
+                  purchaseQuantity: item.purchaseQuantity
+                    ? formatInputNumber(
+                        Math.abs(parseFloat(item.purchaseQuantity) || 0)
+                      )
+                    : "",
+                  purchaseUnit: String(item.purchaseUnit || "").trim(),
+                };
+              }
+              // Fallback to old structure (direct cost)
+              return {
+                name: String(item.name || "").trim(),
+                cost: item.cost
+                  ? formatInputNumber(Math.abs(parseFloat(item.cost) || 0))
+                  : "",
+              };
+            })
+            .filter((item) => {
+              // Validate new structure
+              if (item.usageAmount !== undefined) {
+                return (
+                  item.name &&
+                  item.usageAmount &&
+                  item.usageUnit &&
+                  item.purchasePrice &&
+                  item.purchaseQuantity &&
+                  item.purchaseUnit
+                );
+              }
+              // Validate old structure
+              return item.name && item.cost;
+            })
         : [];
 
       // Validasi dan parse fixed costs
