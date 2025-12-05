@@ -18,12 +18,23 @@ export function formatNumber(value) {
   return new Intl.NumberFormat("id-ID").format(value);
 }
 
-// Parse formatted number string (e.g., "1.200.000") to raw number
+// Parse formatted number string (e.g., "1.200.000" or "0.5") to raw number
 export function parseFormattedNumber(value) {
   if (!value) return 0;
-  // Remove dots (thousand separators) and parse
-  const cleaned = value.toString().replace(/\./g, "");
-  return parseFloat(cleaned) || 0;
+  
+  // Check if value contains decimal point
+  if (value.toString().includes(".")) {
+    // Has decimal point - need to preserve it
+    // Remove thousand separators (dots before decimal point) but keep decimal point
+    const parts = value.toString().split(".");
+    const integerPart = parts[0].replace(/\./g, ""); // Remove dots from integer part
+    const decimalPart = parts.slice(1).join(""); // Join all parts after first dot (in case of multiple dots)
+    return parseFloat(integerPart + "." + decimalPart) || 0;
+  } else {
+    // No decimal point - remove all dots (thousand separators)
+    const cleaned = value.toString().replace(/\./g, "");
+    return parseFloat(cleaned) || 0;
+  }
 }
 
 // Format number for input display (with thousand separators)
@@ -32,6 +43,50 @@ export function formatInputNumber(value) {
   const num = parseFormattedNumber(value);
   if (isNaN(num) || num === 0) return "";
   return new Intl.NumberFormat("id-ID").format(num);
+}
+
+// Handle number input that allows decimals
+// Returns cleaned value that preserves decimal point
+export function handleDecimalInput(value) {
+  if (!value) return "";
+  
+  // Remove all non-digit and non-decimal characters except one decimal point
+  let cleaned = value.replace(/[^\d.]/g, "");
+  
+  // Ensure only one decimal point
+  const parts = cleaned.split(".");
+  if (parts.length > 2) {
+    // If more than one decimal point, keep only the first one
+    cleaned = parts[0] + "." + parts.slice(1).join("");
+  }
+  
+  return cleaned;
+}
+
+// Format decimal number for display (preserves decimal, formats integer part with thousand separators)
+export function formatDecimalInput(value) {
+  if (!value) return "";
+  
+  // Check if value contains decimal point
+  if (value.includes(".")) {
+    const parts = value.split(".");
+    const integerPart = parts[0].replace(/[^\d]/g, "");
+    const decimalPart = parts[1]?.replace(/[^\d]/g, "") || "";
+    
+    if (!integerPart && !decimalPart) return "";
+    
+    // Format integer part with thousand separators if it's a large number
+    const formattedInteger = integerPart
+      ? new Intl.NumberFormat("id-ID").format(parseInt(integerPart) || 0)
+      : "0";
+    
+    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+  } else {
+    // No decimal, format as regular number
+    const num = parseFormattedNumber(value);
+    if (isNaN(num) || num === 0) return "";
+    return new Intl.NumberFormat("id-ID").format(num);
+  }
 }
 
 // Convert unit to base unit for calculation

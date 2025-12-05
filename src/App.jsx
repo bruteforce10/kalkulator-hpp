@@ -34,6 +34,8 @@ import { ImagePlus, X } from "lucide-react";
 function App() {
   const [productName, setProductName] = useState("");
   const [productCategory, setProductCategory] = useState("");
+  const [calculationMode, setCalculationMode] = useState("perPcs"); // "perPcs" or "perBatch"
+  const [batchSize, setBatchSize] = useState(""); // Jumlah produk per batch/resep
   const [variableCosts, setVariableCosts] = useState([
     {
       name: "",
@@ -73,7 +75,9 @@ function App() {
   const hppData = calculateHPP(
     variableCosts,
     fixedCosts,
-    parseFormattedNumber(targetSales)
+    parseFormattedNumber(targetSales),
+    calculationMode,
+    parseFormattedNumber(batchSize)
   );
 
   // Calculate price recommendations
@@ -167,7 +171,9 @@ function App() {
       const allCosts = await getAllCostsFromAI(
         productName,
         productCategory,
-        imagePayload
+        imagePayload,
+        calculationMode,
+        parseFormattedNumber(batchSize)
       );
 
       let hasData = false;
@@ -316,6 +322,39 @@ function App() {
                   </Select>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="calculation-mode">Mode Perhitungan HPP</Label>
+                  <Select
+                    id="calculation-mode"
+                    value={calculationMode}
+                    onChange={(e) => setCalculationMode(e.target.value)}
+                  >
+                    <option value="perPcs">Per Pcs (Satuan)</option>
+                    <option value="perBatch">Per Resep (Batch)</option>
+                  </Select>
+                  {calculationMode === "perBatch" && (
+                    <div className="mt-2">
+                      <Label htmlFor="batch-size" className="text-sm">
+                        Jumlah Produk per Resep/Batch
+                      </Label>
+                      <Input
+                        id="batch-size"
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="Contoh: 10"
+                        value={batchSize}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/[^\d]/g, "");
+                          setBatchSize(cleaned);
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Masukkan jumlah produk yang dihasilkan dari 1
+                        resep/batch
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="product-image">
                     Gambar Produk (Opsional)
                   </Label>
@@ -387,6 +426,8 @@ function App() {
               onAIFill={handleGetAllAICosts}
               loadingAI={loadingAI}
               productName={productName}
+              calculationMode={calculationMode}
+              batchSize={batchSize}
             />
 
             {/* Fixed Costs */}

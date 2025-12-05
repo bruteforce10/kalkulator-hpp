@@ -35,9 +35,11 @@ export function VariableCostsInput({
   onAIFill,
   loadingAI,
   productName,
+  calculationMode = "perPcs",
+  batchSize = 0,
 }) {
   // Calculate total variable cost from calculated cost per product
-  const totalVariableCost = variableCosts.reduce((sum, item) => {
+  let totalVariableCost = variableCosts.reduce((sum, item) => {
     // If item has the new structure (usageAmount, purchasePrice, etc.), calculate cost
     if (item.usageAmount !== undefined || item.purchasePrice !== undefined) {
       const cost = calculateCostPerProduct(
@@ -54,6 +56,11 @@ export function VariableCostsInput({
     return sum + (isNaN(cost) ? 0 : cost);
   }, 0);
 
+  // Jika mode perBatch, bagi dengan batchSize untuk dapat biaya per produk
+  if (calculationMode === "perBatch" && batchSize > 0) {
+    totalVariableCost = totalVariableCost / batchSize;
+  }
+
   // Handler untuk format input
   const handleNumberInput = (value) => {
     const cleaned = value.replace(/[^\d]/g, "");
@@ -67,7 +74,9 @@ export function VariableCostsInput({
           <div>
             <CardTitle>Biaya Variabel per Produk</CardTitle>
             <CardDescription>
-              Rincikan semua bahan yang digunakan untuk membuat produk jadi
+              {calculationMode === "perBatch"
+                ? "Rincikan semua bahan yang digunakan untuk membuat 1 resep/batch"
+                : "Rincikan semua bahan yang digunakan untuk membuat produk jadi"}
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -117,6 +126,11 @@ export function VariableCostsInput({
               calculatedCost = parseFormattedNumber(item.cost || 0);
             }
 
+            // Jika mode perBatch, bagi dengan batchSize untuk dapat biaya per produk
+            if (calculationMode === "perBatch" && batchSize > 0) {
+              calculatedCost = calculatedCost / batchSize;
+            }
+
             return (
               <div key={index} className="border rounded-lg p-4 space-y-4">
                 <div className="flex items-center justify-between mb-4">
@@ -146,10 +160,12 @@ export function VariableCostsInput({
 
                 {/* Grid untuk Pemakaian per Produk dan Info Pembelian */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Pemakaian per Produk */}
+                  {/* Pemakaian per Produk/Batch */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
-                      Pemakaian per Produk
+                      {calculationMode === "perBatch"
+                        ? "Pemakaian per Resep/Batch"
+                        : "Pemakaian per Produk"}
                     </Label>
                     <div className="flex gap-2">
                       <div className="flex-1">
@@ -285,7 +301,11 @@ export function VariableCostsInput({
                 {/* Biaya Produk (calculated) */}
                 <div className="rounded-lg bg-muted p-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Biaya Produk:</span>
+                    <span className="text-sm font-medium">
+                      {calculationMode === "perBatch"
+                        ? "Biaya per Produk (dari batch):"
+                        : "Biaya Produk:"}
+                    </span>
                     <span className="text-base font-bold text-primary">
                       {formatCurrency(calculatedCost)}
                     </span>

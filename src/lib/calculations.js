@@ -2,24 +2,68 @@ import { parseFormattedNumber, calculateCostPerProduct } from "./utils";
 
 /**
  * Calculate HPP and related metrics
+ * @param {Array} variableCosts - Array of variable cost items
+ * @param {Array} fixedCosts - Array of fixed cost items
+ * @param {number} targetSales - Target sales per month
+ * @param {string} calculationMode - "perPcs" or "perBatch"
+ * @param {number} batchSize - Number of products per batch (required if calculationMode is "perBatch")
  */
 
-export function calculateHPP(variableCosts, fixedCosts, targetSales) {
-  const variableCostPerUnit = variableCosts.reduce((sum, item) => {
-    // If item has the new structure (usageAmount, purchasePrice, etc.), calculate cost
-    if (item.usageAmount !== undefined || item.purchasePrice !== undefined) {
-      const cost = calculateCostPerProduct(
-        parseFormattedNumber(item.usageAmount || 0),
-        item.usageUnit || "",
-        parseFormattedNumber(item.purchasePrice || 0),
-        parseFormattedNumber(item.purchaseQuantity || 0),
-        item.purchaseUnit || ""
-      );
-      return sum + (isNaN(cost) ? 0 : cost);
+export function calculateHPP(
+  variableCosts,
+  fixedCosts,
+  targetSales,
+  calculationMode = "perPcs",
+  batchSize = 0
+) {
+  let variableCostPerUnit = 0;
+
+  if (calculationMode === "perBatch") {
+    // Mode Per Resep (Batch)
+    // Hitung total biaya untuk 1 batch, lalu bagi dengan jumlah produk per batch
+    if (batchSize > 0) {
+      const totalBatchCost = variableCosts.reduce((sum, item) => {
+        // If item has the new structure (usageAmount, purchasePrice, etc.), calculate cost
+        if (
+          item.usageAmount !== undefined ||
+          item.purchasePrice !== undefined
+        ) {
+          // Untuk batch, usageAmount adalah total untuk 1 batch (bukan per produk)
+          // Jadi langsung hitung biaya untuk usageAmount tersebut
+          const cost = calculateCostPerProduct(
+            parseFormattedNumber(item.usageAmount || 0),
+            item.usageUnit || "",
+            parseFormattedNumber(item.purchasePrice || 0),
+            parseFormattedNumber(item.purchaseQuantity || 0),
+            item.purchaseUnit || ""
+          );
+          return sum + (isNaN(cost) ? 0 : cost);
+        }
+        // Fallback to old structure (direct cost) - dianggap sudah per batch
+        return sum + parseFormattedNumber(item.cost || 0);
+      }, 0);
+
+      // Bagi total biaya batch dengan jumlah produk per batch
+      variableCostPerUnit = totalBatchCost / batchSize;
     }
-    // Fallback to old structure (direct cost)
-    return sum + parseFormattedNumber(item.cost || 0);
-  }, 0);
+  } else {
+    // Mode Per Pcs (Satuan) - default behavior
+    variableCostPerUnit = variableCosts.reduce((sum, item) => {
+      // If item has the new structure (usageAmount, purchasePrice, etc.), calculate cost
+      if (item.usageAmount !== undefined || item.purchasePrice !== undefined) {
+        const cost = calculateCostPerProduct(
+          parseFormattedNumber(item.usageAmount || 0),
+          item.usageUnit || "",
+          parseFormattedNumber(item.purchasePrice || 0),
+          parseFormattedNumber(item.purchaseQuantity || 0),
+          item.purchaseUnit || ""
+        );
+        return sum + (isNaN(cost) ? 0 : cost);
+      }
+      // Fallback to old structure (direct cost)
+      return sum + parseFormattedNumber(item.cost || 0);
+    }, 0);
+  }
 
   // Hitung total biaya tetap per bulan dari array fixed costs
   const totalFixedCostPerMonth = Array.isArray(fixedCosts)

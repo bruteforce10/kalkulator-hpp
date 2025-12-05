@@ -307,7 +307,9 @@ Sekarang analisis produk "${productName}" dan berikan JSON array biaya tetapnya:
 export async function getAllCostsFromAI(
   productName,
   productCategory = "",
-  productImage
+  productImage,
+  calculationMode = "perPcs",
+  batchSize = 0
 ) {
   if (!genAI) {
     return null;
@@ -328,12 +330,18 @@ export async function getAllCostsFromAI(
     ? "\nGambar produk terlampir. Gunakan detail visual tersebut untuk memahami bahan atau gaya penyajian produk."
     : "";
 
+  // Tentukan instruksi berdasarkan mode perhitungan
+  const modeInstruction =
+    calculationMode === "perBatch" && batchSize > 0
+      ? `\nMODE PERHITUNGAN: Per Resep (Batch)\n- usageAmount adalah jumlah bahan yang digunakan untuk membuat 1 RESEP/BATCH (bukan per produk)\n- 1 resep/batch menghasilkan ${batchSize} produk\n- Hitung total bahan untuk 1 batch penuh, bukan per produk`
+      : `\nMODE PERHITUNGAN: Per Pcs (Satuan)\n- usageAmount adalah jumlah bahan yang digunakan untuk membuat 1 PRODUK (satuan)`;
+
   const prompt = `Sebagai ahli bisnis makanan dan minuman di Indonesia, analisis produk "${productName}" secara menyeluruh dan berikan:
 
-1. DAFTAR BAHAN-BAHAN (variable costs) yang diperlukan untuk membuat 1 unit produk tersebut
+1. DAFTAR BAHAN-BAHAN (variable costs) yang diperlukan${calculationMode === "perBatch" && batchSize > 0 ? " untuk membuat 1 resep/batch" : " untuk membuat 1 unit produk"}
 2. DAFTAR BIAYA TETAP (fixed costs) yang biasanya diperlukan untuk menjalankan bisnis produk tersebut per bulan
 
-${categoryInfo}${imageInstruction}
+${categoryInfo}${imageInstruction}${modeInstruction}
 
 Format jawaban HARUS dalam JSON object seperti ini:
 {
@@ -363,7 +371,11 @@ Format jawaban HARUS dalam JSON object seperti ini:
 
 Aturan untuk Variable Costs:
 - Berikan 3-8 bahan utama yang biasanya digunakan
-- usageAmount: Jumlah bahan yang digunakan per 1 produk (angka saja)
+- usageAmount: ${
+    calculationMode === "perBatch" && batchSize > 0
+      ? `Jumlah bahan yang digunakan untuk 1 RESEP/BATCH (bukan per produk). Hitung total untuk membuat ${batchSize} produk sekaligus.`
+      : "Jumlah bahan yang digunakan per 1 PRODUK (satuan)"
+  } (angka saja)
 - usageUnit: Satuan pemakaian (pilih salah satu: g, kg, ml, L, pcs, buah, lembar)
 - purchasePrice: Total harga pembelian bahan (dalam Rupiah Indonesia, angka saja)
 - purchaseQuantity: Jumlah yang dibeli (angka saja)
@@ -376,7 +388,60 @@ Aturan untuk Fixed Costs:
 - Estimasi biaya per bulan (dalam Rupiah Indonesia)
 - Biaya dalam angka saja (tanpa "Rp" atau koma)
 
-Contoh untuk "Kopi Susu Gula Aren":
+${
+    calculationMode === "perBatch" && batchSize > 0
+      ? `Contoh untuk "Kopi Susu Gula Aren" (Mode Batch - 1 batch = ${batchSize} produk):
+{
+  "variableCosts": [
+    {
+      "name": "Kopi bubuk",
+      "usageAmount": ${batchSize * 20},
+      "usageUnit": "g",
+      "purchasePrice": 50000,
+      "purchaseQuantity": 500,
+      "purchaseUnit": "g"
+    },
+    {
+      "name": "Susu cair",
+      "usageAmount": ${batchSize * 250},
+      "usageUnit": "ml",
+      "purchasePrice": 12000,
+      "purchaseQuantity": 1000,
+      "purchaseUnit": "ml"
+    },
+    {
+      "name": "Gula aren",
+      "usageAmount": ${batchSize * 15},
+      "usageUnit": "g",
+      "purchasePrice": 25000,
+      "purchaseQuantity": 1000,
+      "purchaseUnit": "g"
+    },
+    {
+      "name": "Cup + tutup",
+      "usageAmount": ${batchSize},
+      "usageUnit": "pcs",
+      "purchasePrice": 70000,
+      "purchaseQuantity": 100,
+      "purchaseUnit": "pcs"
+    },
+    {
+      "name": "Sedotan",
+      "usageAmount": ${batchSize},
+      "usageUnit": "pcs",
+      "purchasePrice": 10000,
+      "purchaseQuantity": 200,
+      "purchaseUnit": "pcs"
+    }
+  ],
+  "fixedCosts": [
+    {"name": "Sewa tempat", "totalCost": 3000000},
+    {"name": "Gaji karyawan", "totalCost": 4000000},
+    {"name": "Listrik", "totalCost": 500000},
+    {"name": "Internet", "totalCost": 200000}
+  ]
+}`
+      : `Contoh untuk "Kopi Susu Gula Aren" (Mode Per Pcs):
 {
   "variableCosts": [
     {
@@ -426,6 +491,7 @@ Contoh untuk "Kopi Susu Gula Aren":
     {"name": "Listrik", "totalCost": 500000},
     {"name": "Internet", "totalCost": 200000}
   ]
+}`
 }
 
 PENTING: JANGAN tambahkan teks lain, HANYA output JSON object saja. Sekarang analisis produk "${productName}" dan berikan JSON object:`;
